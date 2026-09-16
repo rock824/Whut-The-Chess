@@ -4,27 +4,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#17152c">
-  <meta name="description" content="A colorful, kid-friendly chess game with a coach, opening lessons, puzzles, and mini-games.">
-  <title>Whut The Chess — Play. Learn. Level Up.</title>
+  <meta name="description" content="Whit the Chess? is a colorful, kid-friendly chess game with coaching, strategy lessons, puzzles, and adaptive mini-games.">
+  <title>Whit the Chess? — Play. Learn. Level Up.</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2317152c'/%3E%3Ctext x='32' y='47' text-anchor='middle' font-size='45' fill='%23ffc947'%3E%E2%99%9E%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="confetti" id="confetti" aria-hidden="true"></div>
   <header class="topbar">
-    <button class="brand" data-view-target="play" aria-label="Whut The Chess home">
+    <button class="brand" data-view-target="play" aria-label="Whit the Chess home">
       <span class="brand-mark" aria-hidden="true">♞</span>
-      <span><strong>Whut The Chess</strong><small>Play · Learn · Level up</small></span>
+      <span><strong>Whit the Chess?</strong><small>Play · Learn · Level up</small></span>
     </button>
     <nav class="nav-tabs" aria-label="Game sections">
       <button class="nav-tab active" data-view-target="play"><span>♟</span> Play</button>
       <button class="nav-tab" data-view-target="learn"><span>✦</span> Learn</button>
-      <button class="nav-tab" data-view-target="openings"><span>↗</span> Openings</button>
+      <button class="nav-tab" data-view-target="openings"><span>↗</span> Strategy</button>
       <button class="nav-tab" data-view-target="challenges"><span>⚡</span> Challenges</button>
     </nav>
     <div class="player-progress" aria-label="Player progress">
       <span class="level-badge" id="levelBadge">LV 1</span>
       <div class="xp-wrap"><strong id="xpLabel">0 XP</strong><div class="xp-track"><i id="xpBar"></i></div></div>
       <span class="streak" title="Daily practice streak">🔥 <b id="streakCount">1</b></span>
+      <button class="profile-button" id="profileButton" type="button"><span>♙</span><b id="profileLabel">Local player</b></button>
     </div>
   </header>
 
@@ -43,6 +45,7 @@
             <button class="action primary" id="hintButton">💡 Show a hint</button>
             <button class="action" id="undoButton">↶ Undo turn</button>
             <button class="action" id="newGameButton">↻ New game</button>
+            <button class="action" id="soundToggle" aria-pressed="true">🔊 Sound on</button>
             <label class="difficulty-label">Coach level
               <select id="difficultySelect">
                 <option value="1">Explorer</option>
@@ -110,7 +113,12 @@
 
     <section class="view" id="view-openings" aria-labelledby="openingsTitle">
       <div class="section-intro compact">
-        <div><span class="eyebrow mint">OPENING LAB</span><h1 id="openingsTitle">Learn the plan—not just the moves.</h1><p>Step through famous openings and see what every move is trying to accomplish.</p></div>
+        <div><span class="eyebrow mint">STRATEGY LAB</span><h1 id="openingsTitle">Learn the plan—not just the moves.</h1><p>Explore openings, middlegames, and endgames through guided positions.</p></div>
+      </div>
+      <div class="strategy-tabs" id="strategyTabs" aria-label="Strategy categories">
+        <button class="active" data-strategy="opening">Openings</button>
+        <button data-strategy="middlegame">Middlegames</button>
+        <button data-strategy="endgame">Endgames</button>
       </div>
       <div class="opening-layout">
         <div class="opening-menu" id="openingMenu"></div>
@@ -136,7 +144,7 @@
       </div>
       <div class="mode-tabs" id="challengeTabs">
         <button class="active" data-mode="puzzles">♛ Tactic Puzzles</button>
-        <button data-mode="knight">♞ Knight Quest</button>
+        <button data-mode="quest">♞ Piece Quest</button>
         <button data-mode="coordinates">⌖ Square Sprint</button>
         <button data-mode="values">★ Piece Points</button>
       </div>
@@ -155,6 +163,32 @@
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="profile-modal" id="profileModal" hidden>
+    <div class="profile-backdrop" data-close-profile></div>
+    <section class="profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+      <button class="profile-close" data-close-profile aria-label="Close player profile">×</button>
+      <span class="eyebrow">PLAYER PROFILE</span>
+      <h2 id="profileTitle">Save progress everywhere</h2>
+      <p class="profile-copy">Use your invited username and six-digit PIN. Your PIN is sent securely and never stored in this browser.</p>
+      <div class="profile-status" id="profileStatus"><span>●</span><p>Playing locally. Progress is saved on this device.</p></div>
+      <form id="loginForm" class="profile-form">
+        <label>Username<input id="loginUsername" name="username" autocomplete="username" minlength="3" maxlength="24" required></label>
+        <label>Six-digit PIN<input id="loginPin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" pattern="[0-9]{6}" maxlength="6" required></label>
+        <button class="action primary wide" type="submit">Sign in and sync</button>
+      </form>
+      <details class="register-panel">
+        <summary>Create an invited player</summary>
+        <form id="registerForm" class="profile-form">
+          <label>Choose a username<input id="registerUsername" name="username" autocomplete="username" minlength="3" maxlength="24" required></label>
+          <label>Choose a six-digit PIN<input id="registerPin" name="pin" type="password" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{6}" maxlength="6" required></label>
+          <label>Family invitation code<input id="inviteCode" name="inviteCode" type="password" autocomplete="off" required></label>
+          <button class="action wide" type="submit">Create player</button>
+        </form>
+      </details>
+      <button class="action wide signout-button" id="signoutButton" type="button" hidden>Sign out</button>
+    </section>
+  </div>
+  <script src="config.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

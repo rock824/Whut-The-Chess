@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: whit-chess-backups
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes: [ReadWriteMany]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: whit-chess-nfs
+  nfs:
+    server: REPLACE_WITH_NFS_SERVER_IP
+    path: /tank/backups/whit-the-chess
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: whit-chess-backups
+  namespace: whit-chess
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: whit-chess-nfs
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: whit-chess-postgres-backup
+  namespace: whit-chess
+spec:
+  schedule: "17 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 86400
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: postgres:17-alpine
+              command: ["sh", "-c"]
+              args:
+                - pg_dump "$DATABASE_URL" | gzip > "/backups/whit-chess-$(date +%F-%H%M).sql.gz"; find /backups -type f -name 'whit-chess-*.sql.gz' -mtime +30 -delete
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: whit-chess-secrets
+                      key: database-url
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: whit-chess-backups

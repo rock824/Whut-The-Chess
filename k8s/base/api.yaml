@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whit-chess-api
+  namespace: whit-chess
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: whit-chess-api
+  template:
+    metadata:
+      labels:
+        app: whit-chess-api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api
+          image: ghcr.io/rock824/whut-the-chess-api:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: ALLOWED_ORIGINS
+              value: https://chess.whitplex.com,https://rock824.github.io
+            - name: COOKIE_DOMAIN
+              value: chess-api.whitplex.com
+            - name: SESSION_DAYS
+              value: "14"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: whit-chess-secrets
+                  key: database-url
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: whit-chess-secrets
+                  key: session-secret
+            - name: REGISTRATION_CODE
+              valueFrom:
+                secretKeyRef:
+                  name: whit-chess-secrets
+                  key: registration-code
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 15
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whit-chess-api
+  namespace: whit-chess
+spec:
+  selector:
+    app: whit-chess-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: whit-chess-api
+  namespace: whit-chess
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: chess-api.whitplex.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: whit-chess-api
+                port:
+                  name: http

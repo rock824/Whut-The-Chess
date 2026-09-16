@@ -4,6 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/engine.test.js"
+    "test": "node tests/engine.test.js && node tests/curriculum.test.js"
   }
 }

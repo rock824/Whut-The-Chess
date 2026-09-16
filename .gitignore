@@ -1,0 +1,6 @@
+.sites-runtime/
+*.zip
+__pycache__/
+*.pyc
+.env
+k8s/secret.yaml
