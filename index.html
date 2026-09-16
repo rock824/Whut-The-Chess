@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17152c">
+  <meta name="description" content="A colorful, kid-friendly chess game with a coach, opening lessons, puzzles, and mini-games.">
+  <title>Whut The Chess — Play. Learn. Level Up.</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+  <header class="topbar">
+    <button class="brand" data-view-target="play" aria-label="Whut The Chess home">
+      <span class="brand-mark" aria-hidden="true">♞</span>
+      <span><strong>Whut The Chess</strong><small>Play · Learn · Level up</small></span>
+    </button>
+    <nav class="nav-tabs" aria-label="Game sections">
+      <button class="nav-tab active" data-view-target="play"><span>♟</span> Play</button>
+      <button class="nav-tab" data-view-target="learn"><span>✦</span> Learn</button>
+      <button class="nav-tab" data-view-target="openings"><span>↗</span> Openings</button>
+      <button class="nav-tab" data-view-target="challenges"><span>⚡</span> Challenges</button>
+    </nav>
+    <div class="player-progress" aria-label="Player progress">
+      <span class="level-badge" id="levelBadge">LV 1</span>
+      <div class="xp-wrap"><strong id="xpLabel">0 XP</strong><div class="xp-track"><i id="xpBar"></i></div></div>
+      <span class="streak" title="Daily practice streak">🔥 <b id="streakCount">1</b></span>
+    </div>
+  </header>
+
+  <main>
+    <section class="view active" id="view-play" aria-labelledby="playTitle">
+      <div class="play-layout">
+        <div class="game-column">
+          <div class="game-ribbon">
+            <div><span class="eyebrow">COACH MATCH</span><h1 id="playTitle">Your move, champion.</h1></div>
+            <div class="turn-pill"><span id="turnDot"></span><strong id="turnLabel">Your turn</strong></div>
+          </div>
+          <div class="board-shell">
+            <div class="board" id="playBoard" role="grid" aria-label="Chess board"></div>
+          </div>
+          <div class="game-actions">
+            <button class="action primary" id="hintButton">💡 Show a hint</button>
+            <button class="action" id="undoButton">↶ Undo turn</button>
+            <button class="action" id="newGameButton">↻ New game</button>
+            <label class="difficulty-label">Coach level
+              <select id="difficultySelect">
+                <option value="1">Explorer</option>
+                <option value="2" selected>Tactician</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <aside class="coach-panel" aria-live="polite">
+          <div class="coach-head">
+            <div class="coach-avatar">♟<span></span></div>
+            <div><span class="eyebrow">YOUR CHESS COACH</span><h2>Coach Nova</h2></div>
+          </div>
+          <div class="coach-message" id="coachMessage">
+            <span class="message-icon">🎯</span>
+            <div><strong>First mission: own the center!</strong><p>Try moving the pawn in front of your king or queen two squares. That opens paths for your bishops and queen.</p></div>
+          </div>
+          <div class="mission-card">
+            <div class="mission-top"><span>OPENING MISSION</span><b id="missionProgress">0 / 3</b></div>
+            <h3>Ready your whole team</h3>
+            <ul id="missionList">
+              <li data-mission="center"><span>○</span> Move a center pawn</li>
+              <li data-mission="develop"><span>○</span> Develop a knight or bishop</li>
+              <li data-mission="castle"><span>○</span> Castle your king to safety</li>
+            </ul>
+          </div>
+          <div class="move-log-wrap">
+            <div class="section-label"><span>MOVE STORY</span><button id="clearLog" title="Clear move story">Clear</button></div>
+            <div class="move-log" id="moveLog"><p class="empty-log">Your moves will appear here.</p></div>
+          </div>
+          <div class="tip-card"><span>⭐</span><p><strong>Remember:</strong> A good opening develops pieces, controls the center, and protects the king.</p></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view" id="view-learn" aria-labelledby="learnTitle">
+      <div class="section-intro">
+        <div><span class="eyebrow coral">CHESS SCHOOL</span><h1 id="learnTitle">Master the board, one idea at a time.</h1><p>Short lessons, clear examples, and no giant walls of text.</p></div>
+        <div class="lesson-meter"><b id="lessonCount">0 / 6</b><span>lessons complete</span></div>
+      </div>
+      <div class="learn-grid">
+        <div class="lesson-list" id="lessonList"></div>
+        <article class="lesson-stage" id="lessonStage">
+          <div class="lesson-visual"><span class="giant-piece" id="lessonPiece">♙</span><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div></div>
+          <span class="eyebrow" id="lessonKicker">LESSON 1</span>
+          <h2 id="lessonTitle">Pawn Power</h2>
+          <p class="lesson-lead" id="lessonLead"></p>
+          <div class="lesson-rules" id="lessonRules"></div>
+          <button class="action primary complete-lesson" id="completeLesson">Mark lesson complete +20 XP</button>
+        </article>
+        <aside class="principles-card">
+          <span class="eyebrow yellow">THE GOLDEN FIVE</span>
+          <h2>Smart opening habits</h2>
+          <ol>
+            <li><b>Claim the center</b><span>Influence e4, d4, e5, and d5.</span></li>
+            <li><b>Bring pieces out</b><span>Knights and bishops want jobs early.</span></li>
+            <li><b>Castle soon</b><span>Protect your king and connect rooks.</span></li>
+            <li><b>Don't rush the queen</b><span>She can become an easy target.</span></li>
+            <li><b>Check every threat</b><span>Ask: “What changed?” after each move.</span></li>
+          </ol>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view" id="view-openings" aria-labelledby="openingsTitle">
+      <div class="section-intro compact">
+        <div><span class="eyebrow mint">OPENING LAB</span><h1 id="openingsTitle">Learn the plan—not just the moves.</h1><p>Step through famous openings and see what every move is trying to accomplish.</p></div>
+      </div>
+      <div class="opening-layout">
+        <div class="opening-menu" id="openingMenu"></div>
+        <div class="opening-board-card">
+          <div class="opening-heading"><div><span id="openingFamily">OPEN GAME</span><h2 id="openingName">Italian Game</h2></div><span class="move-counter" id="openingCounter">Start</span></div>
+          <div class="board opening-board" id="openingBoard" role="grid" aria-label="Opening lesson board"></div>
+          <div class="opening-controls"><button class="action" id="openingPrev">← Back</button><button class="action primary" id="openingNext">Next move →</button><button class="action icon-only" id="openingReset" title="Restart opening">↻</button></div>
+        </div>
+        <aside class="opening-notes">
+          <span class="eyebrow">WHY THIS MOVE?</span>
+          <h2 id="openingMoveTitle">A fast start</h2>
+          <p id="openingExplanation"></p>
+          <div class="plan-box"><span>THE BIG PLAN</span><p id="openingPlan"></p></div>
+          <div class="watch-box"><span>👀</span><p id="openingWatch"></p></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view" id="view-challenges" aria-labelledby="challengesTitle">
+      <div class="section-intro compact">
+        <div><span class="eyebrow yellow">TRAINING ARCADE</span><h1 id="challengesTitle">Small games. Big chess brain.</h1><p>Build pattern recognition with quick challenges that feel like play.</p></div>
+        <div class="challenge-score"><span>SESSION SCORE</span><b id="sessionScore">0</b></div>
+      </div>
+      <div class="mode-tabs" id="challengeTabs">
+        <button class="active" data-mode="puzzles">♛ Tactic Puzzles</button>
+        <button data-mode="knight">♞ Knight Quest</button>
+        <button data-mode="coordinates">⌖ Square Sprint</button>
+        <button data-mode="values">★ Piece Points</button>
+      </div>
+      <div class="challenge-layout">
+        <div class="challenge-board-card">
+          <div class="challenge-prompt"><div><span id="challengeKicker">PUZZLE 1 OF 4</span><h2 id="challengePrompt">White to move: find checkmate in one.</h2></div><span class="timer" id="challengeTimer">∞</span></div>
+          <div class="board challenge-board" id="challengeBoard" role="grid" aria-label="Challenge board"></div>
+        </div>
+        <aside class="challenge-side">
+          <div id="challengeContent"></div>
+          <div class="challenge-feedback" id="challengeFeedback"><span>🧠</span><div><strong>Take your time.</strong><p>Look for checks, captures, and threats—in that order.</p></div></div>
+          <button class="action primary wide" id="nextChallenge">Next challenge →</button>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
