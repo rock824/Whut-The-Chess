@@ -112,7 +112,11 @@ async def current_user(request: Request, token: str | None = Cookie(default=None
 
 async def player_bundle(pool: asyncpg.Pool, user: asyncpg.Record) -> dict[str, Any]:
     row = await pool.fetchrow("SELECT data FROM player_progress WHERE player_id = $1", user["id"])
-    progress = dict(row["data"]) if row else default_progress()
+    if not row:
+        progress = default_progress()
+    else:
+        raw_progress = row["data"]
+        progress = json.loads(raw_progress) if isinstance(raw_progress, str) else dict(raw_progress)
     return {"player": {"id": str(user["id"]), "username": user["username"]}, "progress": progress}
 
 
