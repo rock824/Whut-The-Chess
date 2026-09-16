@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 .env
 k8s/secret.yaml
+k8s/email-secret.yaml

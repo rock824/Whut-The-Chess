@@ -33,6 +33,10 @@ spec:
               value: chess-api.whitplex.com
             - name: SESSION_DAYS
               value: "14"
+            - name: APP_BASE_URL
+              value: https://chess.whitplex.com
+            - name: SMTP_PORT
+              value: "587"
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -48,6 +52,30 @@ spec:
                 secretKeyRef:
                   name: whit-chess-secrets
                   key: registration-code
+            - name: SMTP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: whit-chess-email
+                  key: smtp-host
+                  optional: true
+            - name: SMTP_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: whit-chess-email
+                  key: smtp-username
+                  optional: true
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: whit-chess-email
+                  key: smtp-password
+                  optional: true
+            - name: SMTP_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: whit-chess-email
+                  key: smtp-from
+                  optional: true
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

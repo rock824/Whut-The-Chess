@@ -1,4 +1,5 @@
 import { ChessGame, PIECE_SYMBOLS, FILES, colorOf, typeOf, indexToSquare, squareToIndex, bestMove, moveCode, START } from "./engine.js";
+import { expandedStrategies } from "./strategy-data.js";
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -114,6 +115,8 @@ const openings = [
   }
 ];
 
+openings.push(...expandedStrategies);
+
 const puzzles = [
   { name: "Back-rank Beam", difficulty: 1, minLevel: 1, fen: "7k/6pp/8/8/8/8/6PP/5RK1 w - - 0 1", prompt: "White to move: find checkmate in one.", answer: "f1f8", hint: "The rook wants the eighth rank. Black's own pawns trap the king." },
   { name: "Queen Elevator", difficulty: 1, minLevel: 1, fen: "6k1/5ppp/8/8/8/8/6PP/3Q2K1 w - - 0 1", prompt: "White to move: deliver checkmate.", answer: "d1d8", hint: "Look for a queen move that attacks across the entire back rank." },
@@ -129,6 +132,39 @@ const state = {
   xp: 0, lessons: [], puzzles: [], streak: 1, lastVisit: null,
   sessionScore: 0, soundEnabled: true, skills: {}, player: null, updatedAt: null
 };
+
+const preferences = { theme: "light", pieceTheme: "classic", difficulty: "knight" };
+const LETTER_PIECES = { K:"K", Q:"Q", R:"R", B:"B", N:"N", P:"P", k:"K", q:"Q", r:"R", b:"B", n:"N", p:"P" };
+
+function loadPreferences() {
+  try { Object.assign(preferences, JSON.parse(localStorage.getItem("whitChessPreferences") || "{}")); } catch { /* use friendly defaults */ }
+  if (!["light","dark"].includes(preferences.theme)) preferences.theme = "light";
+  if (!["classic","candy","neon","wood","letters"].includes(preferences.pieceTheme)) preferences.pieceTheme = "classic";
+  if (!["pet","pawnawan","knight","force","jedi"].includes(preferences.difficulty)) preferences.difficulty = "knight";
+  applyPreferences();
+}
+
+function applyPreferences() {
+  document.documentElement.dataset.theme = preferences.theme;
+  document.documentElement.dataset.pieceTheme = preferences.pieceTheme;
+  const themeButton = $("#themeToggle");
+  if (themeButton) {
+    const dark = preferences.theme === "dark";
+    themeButton.textContent = dark ? "☀️ Light mode" : "🌙 Dark mode";
+    themeButton.setAttribute("aria-pressed", String(dark));
+  }
+  if ($("#pieceThemeSelect")) $("#pieceThemeSelect").value = preferences.pieceTheme;
+  if ($("#difficultySelect")) $("#difficultySelect").value = preferences.difficulty;
+}
+
+function savePreferences() {
+  localStorage.setItem("whitChessPreferences", JSON.stringify(preferences));
+  applyPreferences();
+}
+
+function pieceSymbol(piece) {
+  return preferences.pieceTheme === "letters" ? LETTER_PIECES[piece] : PIECE_SYMBOLS[piece];
+}
 
 const API_BASE = (window.WHIT_CHESS_CONFIG?.apiBase || "").replace(/\/$/, "");
 let syncTimer;
@@ -265,10 +301,33 @@ function setProfileStatus(online, message) {
   const status = $("#profileStatus");
   status.classList.toggle("online", online);
   status.querySelector("p").textContent = message;
-  $("#loginForm").hidden = Boolean(state.player);
-  $(".register-panel").hidden = Boolean(state.player);
-  $("#signoutButton").hidden = !state.player;
+  const signedIn = Boolean(state.player);
+  $("#loginForm").hidden = signedIn;
+  $("#forgotPanel").hidden = signedIn;
+  $("#registerPanel").hidden = signedIn;
+  $("#profileForm").hidden = !signedIn;
+  $("#signoutButton").hidden = !signedIn;
+  if (signedIn) renderProfileEditor();
   updateProgressUI();
+}
+
+function renderProfileEditor() {
+  if (!state.player) return;
+  $("#profileUsername").textContent = state.player.username;
+  $("#profileName").value = state.player.displayName || "";
+  $("#profileEmail").value = state.player.email || "";
+  const emailStatus = $("#emailStatus");
+  if (!state.player.email) {
+    emailStatus.textContent = "Add and verify an email to enable PIN recovery.";
+    emailStatus.className = "email-status";
+  } else if (state.player.emailVerified) {
+    emailStatus.textContent = "✓ Email verified · PIN recovery ready";
+    emailStatus.className = "email-status verified";
+  } else {
+    emailStatus.textContent = "Email not verified yet. Check your inbox.";
+    emailStatus.className = "email-status pending";
+  }
+  $("#resendVerification").hidden = !state.player.email || state.player.emailVerified;
 }
 
 async function restoreRemoteSession() {
@@ -310,10 +369,90 @@ async function submitProfileForm(event, mode) {
   }
 }
 
-$("#profileButton").addEventListener("click", () => { $("#profileModal").hidden = false; $("#loginUsername").focus(); });
+async function savePlayerProfile(event) {
+  event.preventDefault();
+  const form = event.currentTarget, submit = form.querySelector('button[type="submit"]');
+  submit.disabled = true; submit.textContent = "Saving…";
+  try {
+    const result = await apiRequest("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify({ displayName: form.elements.displayName.value, email: form.elements.email.value })
+    });
+    state.player = result.player; renderProfileEditor(); updateProgressUI();
+    setProfileStatus(true, result.message || "Profile saved."); showToast("Profile saved"); sound("success");
+  } catch (error) { setProfileStatus(true, error.message); sound("error"); }
+  finally { submit.disabled = false; submit.textContent = "Save profile"; }
+}
+
+async function requestPinReset(event) {
+  event.preventDefault();
+  const form = event.currentTarget, submit = form.querySelector('button[type="submit"]');
+  submit.disabled = true; submit.textContent = "Sending…";
+  try {
+    const result = await apiRequest("/auth/request-pin-reset", {
+      method: "POST",
+      body: JSON.stringify({ username: form.elements.username.value.trim(), email: form.elements.email.value.trim() })
+    });
+    setProfileStatus(false, result.message); form.reset(); showToast("Check your email");
+  } catch (error) { setProfileStatus(false, error.message); }
+  finally { submit.disabled = false; submit.textContent = "Email a reset link"; }
+}
+
+let activeResetToken = null;
+function showResetPinPanel(message) {
+  setProfileStatus(false, message);
+  $("#resetPinForm").hidden = false;
+  $("#loginForm").hidden = true;
+  $("#forgotPanel").hidden = true;
+  $("#registerPanel").hidden = true;
+  $("#profileForm").hidden = true;
+  $("#signoutButton").hidden = true;
+}
+
+async function resetPin(event) {
+  event.preventDefault();
+  const form = event.currentTarget, pin = form.elements.pin.value, confirmPin = form.elements.confirmPin.value;
+  if (pin !== confirmPin) { showResetPinPanel("The two PIN entries do not match."); sound("error"); return; }
+  const submit = form.querySelector('button[type="submit"]'); submit.disabled = true; submit.textContent = "Updating…";
+  try {
+    const result = await apiRequest("/auth/reset-pin", { method: "POST", body: JSON.stringify({ token: activeResetToken, pin }) });
+    activeResetToken = null; history.replaceState(null, "", `${location.pathname}${location.search}`); form.hidden = true; form.reset();
+    state.player = null; setProfileStatus(false, result.message); $("#loginForm").hidden = false; showToast("PIN updated"); sound("success");
+  } catch (error) { showResetPinPanel(error.message); sound("error"); }
+  finally { submit.disabled = false; submit.textContent = "Update PIN"; }
+}
+
+async function handleAccountLink() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  const verificationToken = params.get("verify-email");
+  activeResetToken = params.get("reset-pin");
+  if (!verificationToken && !activeResetToken) return;
+  $("#profileModal").hidden = false;
+  if (activeResetToken) {
+    showResetPinPanel("Reset link accepted. Choose a new six-digit PIN.");
+    return;
+  }
+  try {
+    const result = await apiRequest("/auth/verify-email", { method: "POST", body: JSON.stringify({ token: verificationToken }) });
+    history.replaceState(null, "", `${location.pathname}${location.search}`);
+    if (state.player) { state.player.emailVerified = true; renderProfileEditor(); }
+    setProfileStatus(Boolean(state.player), result.message); showToast("Email verified"); sound("success");
+  } catch (error) { setProfileStatus(Boolean(state.player), error.message); sound("error"); }
+}
+
+$("#profileButton").addEventListener("click", () => { $("#profileModal").hidden = false; (state.player ? $("#profileName") : $("#loginUsername")).focus(); });
 $$('[data-close-profile]').forEach(control => control.addEventListener("click", () => { $("#profileModal").hidden = true; }));
 $("#loginForm").addEventListener("submit", event => submitProfileForm(event, "login"));
 $("#registerForm").addEventListener("submit", event => submitProfileForm(event, "register"));
+$("#profileForm").addEventListener("submit", savePlayerProfile);
+$("#resetRequestForm").addEventListener("submit", requestPinReset);
+$("#resetPinForm").addEventListener("submit", resetPin);
+$("#resendVerification").addEventListener("click", async event => {
+  const button = event.currentTarget; button.disabled = true;
+  try { const result = await apiRequest("/api/profile/send-verification", { method: "POST" }); setProfileStatus(true, result.message); showToast("Verification sent"); }
+  catch (error) { setProfileStatus(true, error.message); }
+  finally { button.disabled = false; }
+});
 $("#signoutButton").addEventListener("click", async () => {
   try { await apiRequest("/auth/logout", { method: "POST" }); } catch { /* local sign-out still completes */ }
   state.player = null; setProfileStatus(false, "Signed out. Progress remains saved on this device."); showToast("Signed out");
@@ -337,7 +476,7 @@ function renderBoard(element, board, options = {}) {
     if (hint.includes(index)) square.classList.add("hint");
     if (piece) {
       const token = document.createElement("span"); token.className = `piece ${colorOf(piece) === "w" ? "white" : "black"}`;
-      token.textContent = PIECE_SYMBOLS[piece]; square.append(token);
+      token.textContent = pieceSymbol(piece); square.append(token);
       if (lastMove?.to === index) square.classList.add("just-moved");
     }
     if (target === index) { const star = document.createElement("span"); star.className = "piece"; star.textContent = "⭐"; square.append(star); }
@@ -409,13 +548,18 @@ function makePlayerMove(move) {
 }
 
 function botMove() {
-  const depth = Number($("#difficultySelect").value);
-  let move = bestMove(playGame, depth);
-  if (depth === 1) {
-    const choices = playGame.moves();
-    const captures = choices.filter(m => m.captured);
-    move = (captures.length ? captures : choices)[Math.floor(Math.random() * (captures.length ? captures.length : choices.length))] || move;
-  }
+  const level = $("#difficultySelect").value;
+  const choices = playGame.moves();
+  const captures = choices.filter(move => move.captured);
+  let move;
+  if (level === "pet") move = choices[Math.floor(Math.random() * choices.length)];
+  else if (level === "pawnawan") {
+    const pool = captures.length && Math.random() < .7 ? captures : choices;
+    move = pool[Math.floor(Math.random() * pool.length)];
+  } else if (level === "knight") {
+    move = Math.random() < .72 ? bestMove(playGame, 1) : choices[Math.floor(Math.random() * choices.length)];
+  } else if (level === "force") move = bestMove(playGame, 2);
+  else move = bestMove(playGame, 3);
   if (move) {
     playGame.move(move.from, move.to); moveStory.push({ side: "Nova", text: prettyMove(move) });
     sound(move.captured ? "capture" : "move");
@@ -427,7 +571,7 @@ function botMove() {
 }
 
 function prettyMove(move) {
-  const icon = PIECE_SYMBOLS[move.piece];
+  const icon = pieceSymbol(move.piece);
   return `${icon} ${indexToSquare(move.from)} → ${indexToSquare(move.to)}${move.captured ? " ×" : ""}${move.castle ? " castle" : ""}`;
 }
 
@@ -497,6 +641,9 @@ $("#undoButton").addEventListener("click", () => {
 
 $("#newGameButton").addEventListener("click", newGame);
 $("#clearLog").addEventListener("click", () => { moveStory = []; renderMoveLog(); });
+$("#themeToggle").addEventListener("click", () => { preferences.theme = preferences.theme === "dark" ? "light" : "dark"; savePreferences(); });
+$("#pieceThemeSelect").addEventListener("change", event => { preferences.pieceTheme = event.target.value; savePreferences(); renderPlay(); renderOpenings(); renderChallenge(); });
+$("#difficultySelect").addEventListener("change", event => { preferences.difficulty = event.target.value; savePreferences(); showToast(`${event.target.selectedOptions[0].textContent} selected`); });
 
 function newGame() {
   playGame = new ChessGame(); playSelected = null; playLegal = []; playHint = []; moveStory = []; botThinking = false; gameXP = 0;
@@ -528,6 +675,11 @@ function selectOpening(index) { activeOpening = index; openingStep = 0; openingG
 function renderOpenings() {
   const opening = openings[activeOpening];
   const filtered = openings.map((item, index) => ({ item, index })).filter(({ item }) => item.category === activeStrategyCategory);
+  const categoryNames = { opening: "Openings", middlegame: "Middlegames", endgame: "Endgames" };
+  $$('[data-strategy]').forEach(button => {
+    const count = openings.filter(item => item.category === button.dataset.strategy).length;
+    button.textContent = `${categoryNames[button.dataset.strategy]} (${count})`;
+  });
   $("#openingMenu").innerHTML = filtered.map(({ item, index }) => `<button class="opening-choice ${index === activeOpening ? "active" : ""}" data-opening="${index}"><strong>${item.name}</strong><small>${item.level}</small></button>`).join("");
   $$('[data-opening]').forEach(button => button.addEventListener("click", () => selectOpening(Number(button.dataset.opening))));
   renderBoard($("#openingBoard"), openingGame.board, { lastMove: openingGame.lastMove });
@@ -593,7 +745,7 @@ function renderChallenge() {
     const legal = questMoves(quest.index, quest.piece, quest.board).map(to => ({ to, captured: quest.board[to] }));
     $("#challengeKicker").textContent = `PIECE QUEST · LEVEL ${playerLevel()}`; $("#challengePrompt").textContent = `Guide the ${pieceName(quest.piece)} to ${indexToSquare(quest.target)}.`; $("#challengeTimer").textContent = `${quest.movesLeft} moves`;
     renderBoard($("#challengeBoard"), quest.board, { legal, target: quest.target, onClick: questClick });
-    $("#challengeContent").innerHTML = `<span class="difficulty-tag">DIFFICULTY ${quest.difficulty}</span><div class="quest-piece-card"><span class="quest-icon">${PIECE_SYMBOLS[quest.piece]}</span><span><strong>${pieceName(quest.piece)[0].toUpperCase()+pieceName(quest.piece).slice(1)} Quest</strong><small>Target: ${indexToSquare(quest.target)}</small></span></div><p>${quest.instructions}</p><div class="mini-stat"><span>Moves remaining</span><b>${quest.movesLeft}</b></div><div class="mini-stat"><span>Other pieces</span><b>${quest.blockers}</b></div><button class="action wide" id="resetQuest" style="margin-top:15px">↻ New random board</button>`;
+    $("#challengeContent").innerHTML = `<span class="difficulty-tag">DIFFICULTY ${quest.difficulty}</span><div class="quest-piece-card"><span class="quest-icon">${pieceSymbol(quest.piece)}</span><span><strong>${pieceName(quest.piece)[0].toUpperCase()+pieceName(quest.piece).slice(1)} Quest</strong><small>Target: ${indexToSquare(quest.target)}</small></span></div><p>${quest.instructions}</p><div class="mini-stat"><span>Moves remaining</span><b>${quest.movesLeft}</b></div><div class="mini-stat"><span>Other pieces</span><b>${quest.blockers}</b></div><button class="action wide" id="resetQuest" style="margin-top:15px">↻ New random board</button>`;
     $("#resetQuest").addEventListener("click", resetChallenge);
   } else if (challengeMode === "coordinates") {
     $("#challengeKicker").textContent = "SQUARE SPRINT"; $("#challengePrompt").textContent = `Tap square ${coordinateTarget}.`; $("#challengeTimer").textContent = "⌖";
@@ -603,7 +755,7 @@ function renderChallenge() {
     board[squareToIndex("d4")] = valuePiece;
     $("#challengeKicker").textContent = "PIECE POINTS"; $("#challengePrompt").textContent = `How many points is a ${pieceName(valuePiece)} usually worth?`; $("#challengeTimer").textContent = "★";
     renderBoard($("#challengeBoard"), board);
-    $("#challengeContent").innerHTML = `<span class="eyebrow">MATERIAL MATH</span><h2>${PIECE_SYMBOLS[valuePiece]} ${pieceName(valuePiece)}</h2><p>Choose the standard teaching value.</p><div class="value-options">${[1,3,5,9].map(v=>`<button data-value="${v}">${v} ${v===1?"point":"points"}</button>`).join("")}</div>`;
+    $("#challengeContent").innerHTML = `<span class="eyebrow">MATERIAL MATH</span><h2>${pieceSymbol(valuePiece)} ${pieceName(valuePiece)}</h2><p>Choose the standard teaching value.</p><div class="value-options">${[1,3,5,9].map(v=>`<button data-value="${v}">${v} ${v===1?"point":"points"}</button>`).join("")}</div>`;
     $$('[data-value]').forEach(button => button.addEventListener("click", () => valueClick(Number(button.dataset.value))));
   }
 }
@@ -706,4 +858,10 @@ function randomSquare() { return `${FILES[Math.floor(Math.random()*8)]}${Math.fl
 $$('#challengeTabs button').forEach(button => button.addEventListener("click", () => setChallengeMode(button.dataset.mode)));
 $("#nextChallenge").addEventListener("click", () => { const available = unlockedPuzzles(); const current = available.findIndex(item => item.index === puzzleIndex); puzzleIndex = available[(current + 1) % available.length].index; resetChallenge(); });
 
-loadProgress(); updateSoundButton(); renderPlay(); renderLessons(); renderOpenings(); renderChallenge(); restoreRemoteSession();
+async function startApp() {
+  loadPreferences(); loadProgress(); updateSoundButton(); renderPlay(); renderLessons(); renderOpenings(); renderChallenge();
+  await restoreRemoteSession();
+  await handleAccountLink();
+}
+
+startApp();

@@ -6,7 +6,7 @@ The frontend is hosted by GitHub Pages at `chess.whitplex.com`. Player accounts 
 
 ```bash
 git add .
-git commit -m "Expand Whit the Chess learning and player progress"
+git commit -m "Add player recovery, themes, difficulty, and strategy lessons"
 git push
 ```
 
@@ -44,7 +44,32 @@ unset POSTGRES_PASSWORD SESSION_SECRET REGISTRATION_CODE
 
 Do not commit the generated Secret. `k8s/secret.example.yaml` documents the required keys only.
 
-## 4. Deploy through Argo CD
+## 4. Configure recovery email
+
+PIN recovery uses SMTP. The included example is configured for Resend, but any SMTP provider that supports TLS works.
+
+1. In Resend, add and verify a sending subdomain such as `updates.whitplex.com`.
+2. Add the DNS records Resend supplies to the `whitplex.com` zone in Cloudflare.
+3. Create a Resend API key after the domain shows as verified.
+4. Create the Kubernetes Secret without saving the API key in Git:
+
+```bash
+read -rsp "Resend API key: " RESEND_API_KEY
+echo
+
+kubectl -n whit-chess create secret generic whit-chess-email \
+  --from-literal=smtp-host=smtp.resend.com \
+  --from-literal=smtp-username=resend \
+  --from-literal=smtp-password="$RESEND_API_KEY" \
+  --from-literal='smtp-from=Whit the Chess <accounts@updates.whitplex.com>' \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+unset RESEND_API_KEY
+```
+
+`k8s/email-secret.example.yaml` documents these keys. Never put the real API key in that file or commit it.
+
+## 5. Deploy through Argo CD
 
 Apply the included Argo CD Application, or test the manifests directly first:
 
@@ -55,7 +80,16 @@ kubectl apply -f k8s/argocd-application.yaml
 kubectl apply -k k8s/base
 kubectl -n whit-chess rollout status statefulset/postgres
 kubectl -n whit-chess rollout status deployment/whit-chess-api
-kubectl -n whit-chess get pods,svc,ingress,pvc
+kubectl -n whit-chess get pods
+kubectl -n whit-chess get svc,ingress,pvc
+```
+
+Wait for the GitHub Actions **Build Chess API** job to turn green. Because the deployment uses the moving `latest` image tag, restart it once after that workflow finishes so both replicas pull the new backend image:
+
+```bash
+kubectl -n whit-chess rollout restart deployment/whit-chess-api
+kubectl -n whit-chess rollout status deployment/whit-chess-api
+kubectl -n whit-chess get pods -w
 ```
 
 Health check from inside the cluster:
@@ -71,7 +105,21 @@ kubectl run whit-chess-health \
 
 Expected result: `{"status":"ok"}`.
 
-## 5. Backups
+## 6. Test account recovery
+
+1. Sign in at `https://chess.whitplex.com`.
+2. Open the player profile, add a name and email address, and select **Save profile**.
+3. Open the verification link from the email.
+4. Sign out, choose **Forgot your PIN?**, and request a reset using the same username and verified email.
+
+If email does not arrive, inspect the API log without printing the Secret:
+
+```bash
+kubectl -n whit-chess logs deployment/whit-chess-api --tail=100
+kubectl -n whit-chess get secret whit-chess-email
+```
+
+## 7. Backups
 
 Create `/tank/backups/whit-the-chess` on the NFS server and update the server IP in `k8s/optional/postgres-backup-nfs.yaml.example`. Save the configured copy as `k8s/optional/postgres-backup-nfs.yaml`, then apply it:
 
@@ -81,7 +129,7 @@ kubectl apply -f k8s/optional/postgres-backup-nfs.yaml
 
 The CronJob runs at 03:17 daily and retains 30 days of compressed PostgreSQL dumps.
 
-## 6. First player
+## 8. First player
 
 Open the profile button in the game, choose **Create an invited player**, and enter the private invitation code created in step 3. Returning players need only their username and six-digit PIN.
 

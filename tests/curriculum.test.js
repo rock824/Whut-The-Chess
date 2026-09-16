@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { ChessGame, moveCode } from "../engine.js";
+import { ChessGame, moveCode, START } from "../engine.js";
+import { expandedStrategies } from "../strategy-data.js";
 
 const progressivePuzzles = [
   ["k7/pp6/8/8/8/8/PP6/2R3K1 w - - 0 1", "c1c8", "checkmate"],
@@ -32,6 +33,20 @@ for (const [fen, line] of strategyLines) {
   for (const code of line) {
     const move = game.moves().find(candidate => moveCode(candidate) === code);
     assert.ok(move, `${code} in strategy line must be legal`);
+    game.move(move.from, move.to);
+  }
+}
+
+assert.equal(expandedStrategies.filter(item => item.category === "opening").length, 8, "must add eight openings");
+assert.equal(expandedStrategies.filter(item => item.category === "middlegame").length, 9, "must add nine middlegame lessons");
+assert.equal(expandedStrategies.filter(item => item.category === "endgame").length, 9, "must add nine endgame lessons");
+
+for (const strategy of expandedStrategies) {
+  assert.equal(strategy.steps.length, strategy.moves.length + 1, `${strategy.name} must explain its initial position and every move`);
+  const game = new ChessGame(strategy.startFen || START);
+  for (const code of strategy.moves) {
+    const move = game.moves().find(candidate => moveCode(candidate) === code);
+    assert.ok(move, `${code} in ${strategy.name} must be legal`);
     game.move(move.from, move.to);
   }
 }

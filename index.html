@@ -7,6 +7,7 @@
   <meta name="description" content="Whit the Chess? is a colorful, kid-friendly chess game with coaching, strategy lessons, puzzles, and adaptive mini-games.">
   <title>Whit the Chess? — Play. Learn. Level Up.</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2317152c'/%3E%3Ctext x='32' y='47' text-anchor='middle' font-size='45' fill='%23ffc947'%3E%E2%99%9E%3C/text%3E%3C/svg%3E">
+  <script>try{const p=JSON.parse(localStorage.getItem("whitChessPreferences")||"{}");document.documentElement.dataset.theme=p.theme||"light";document.documentElement.dataset.pieceTheme=p.pieceTheme||"classic"}catch{}</script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -46,10 +47,23 @@
             <button class="action" id="undoButton">↶ Undo turn</button>
             <button class="action" id="newGameButton">↻ New game</button>
             <button class="action" id="soundToggle" aria-pressed="true">🔊 Sound on</button>
+            <button class="action" id="themeToggle" aria-pressed="false">🌙 Dark mode</button>
             <label class="difficulty-label">Coach level
               <select id="difficultySelect">
-                <option value="1">Explorer</option>
-                <option value="2" selected>Tactician</option>
+                <option value="pet">Pet O'Wand · Gentle</option>
+                <option value="pawnawan">Pawnawan · Learning</option>
+                <option value="knight" selected>Knight Shift · Tricky</option>
+                <option value="force">Force of Nature · Tough</option>
+                <option value="jedi">Jedi Mustard · Expert</option>
+              </select>
+            </label>
+            <label class="difficulty-label">Piece style
+              <select id="pieceThemeSelect">
+                <option value="classic">Classic</option>
+                <option value="candy">Candy</option>
+                <option value="neon">Neon</option>
+                <option value="wood">Wooden</option>
+                <option value="letters">Chess letters</option>
               </select>
             </label>
           </div>
@@ -169,14 +183,22 @@
       <button class="profile-close" data-close-profile aria-label="Close player profile">×</button>
       <span class="eyebrow">PLAYER PROFILE</span>
       <h2 id="profileTitle">Save progress everywhere</h2>
-      <p class="profile-copy">Use your invited username and six-digit PIN. Your PIN is sent securely and never stored in this browser.</p>
+      <p class="profile-copy">Use your invited username and six-digit PIN. Your PIN is protected by HTTPS and never saved in this browser.</p>
       <div class="profile-status" id="profileStatus"><span>●</span><p>Playing locally. Progress is saved on this device.</p></div>
       <form id="loginForm" class="profile-form">
         <label>Username<input id="loginUsername" name="username" autocomplete="username" minlength="3" maxlength="24" required></label>
         <label>Six-digit PIN<input id="loginPin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" pattern="[0-9]{6}" maxlength="6" required></label>
         <button class="action primary wide" type="submit">Sign in and sync</button>
       </form>
-      <details class="register-panel">
+      <details class="register-panel" id="forgotPanel">
+        <summary>Forgot your PIN?</summary>
+        <form id="resetRequestForm" class="profile-form">
+          <label>Username<input name="username" autocomplete="username" minlength="3" maxlength="24" required></label>
+          <label>Verified email address<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+          <button class="action wide" type="submit">Email a reset link</button>
+        </form>
+      </details>
+      <details class="register-panel" id="registerPanel">
         <summary>Create an invited player</summary>
         <form id="registerForm" class="profile-form">
           <label>Choose a username<input id="registerUsername" name="username" autocomplete="username" minlength="3" maxlength="24" required></label>
@@ -185,6 +207,21 @@
           <button class="action wide" type="submit">Create player</button>
         </form>
       </details>
+      <form id="profileForm" class="profile-form account-profile" hidden>
+        <div class="profile-identity"><span>Signed in username</span><strong id="profileUsername"></strong></div>
+        <label>Name<input id="profileName" name="displayName" autocomplete="name" maxlength="80" placeholder="Player name"></label>
+        <label>Email address<input id="profileEmail" name="email" type="email" autocomplete="email" maxlength="254" placeholder="name@example.com"></label>
+        <div class="email-status" id="emailStatus">Add and verify an email to enable PIN recovery.</div>
+        <button class="action primary wide" type="submit">Save profile</button>
+        <button class="action wide" id="resendVerification" type="button" hidden>Resend verification email</button>
+      </form>
+      <form id="resetPinForm" class="profile-form reset-pin-form" hidden>
+        <h3>Choose a new PIN</h3>
+        <p>This secure reset link can be used only once.</p>
+        <label>New six-digit PIN<input name="pin" type="password" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{6}" maxlength="6" required></label>
+        <label>Confirm new PIN<input name="confirmPin" type="password" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{6}" maxlength="6" required></label>
+        <button class="action primary wide" type="submit">Update PIN</button>
+      </form>
       <button class="action wide signout-button" id="signoutButton" type="button" hidden>Sign out</button>
     </section>
   </div>

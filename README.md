@@ -4,16 +4,17 @@ A colorful, kid-friendly chess game and adaptive learning lab. The frontend runs
 
 ## Game features
 
-- Fully playable chess against a two-level coach bot
+- Fully playable chess against five coach levels, from Pet O'Wand to Jedi Mustard
 - Legal moves, castling, en passant, promotion, hints, undo, check, and checkmate
 - Six piece lessons and five opening principles
-- Strategy Lab with openings, middlegames, and endgames
+- Strategy Lab with 44 guided opening, middlegame, and endgame lessons
 - Progressive tactics that unlock with XP
 - Procedurally changing Piece Quest boards with multiple pieces and blockers
 - Square Sprint and Piece Points mini-games
 - Animated praise, confetti, audible celebrations, and sound controls
+- Light/dark display modes and five selectable chess-piece styles
 - Browser-cached XP, lesson progress, puzzle history, and streaks
-- Invite-only username and PIN profiles when the Kubernetes API is deployed
+- Invite-only username and PIN profiles with names, verified email recovery, and cross-device progress
 - Responsive touch-friendly design
 
 ## Local frontend
