@@ -11,11 +11,24 @@ const coach = document.createElement("aside");
 coach.className = "whit-coach";
 coach.setAttribute("aria-label", "Coach Whit");
 coach.innerHTML = `<div class="whit-coach-avatar" aria-hidden="true">♞</div><div class="whit-coach-copy"><strong>Coach Whit</strong><p id="whit-coach-tip">Ready to level up? Let's play smart chess!</p><div class="whit-coach-actions"><button type="button" id="whit-coach-hint">Coach tip</button><button type="button" id="whit-coach-toasty">Toasty! 🎉</button></div></div>`;
+const sparta = document.createElement("div");
+sparta.className = "whit-sparta";
+sparta.setAttribute("aria-hidden","true");
+sparta.innerHTML = '<div class="whit-sparta-stage"><div class="whit-sparta-coach"><span class="whit-sparta-coach-body">🦵</span></div><span class="whit-sparta-piece">♚</span><div class="whit-sparta-hole"></div><strong class="whit-sparta-quote">THIS IS SPARTA!</strong></div>';
+let spartaTimer;
+function showSparta() {
+  clearTimeout(spartaTimer);
+  sparta.classList.remove("whit-sparta-active");
+  void sparta.offsetWidth;
+  sparta.classList.add("whit-sparta-active");
+  spartaTimer = setTimeout(() => sparta.classList.remove("whit-sparta-active"), 2300);
+}
+document.addEventListener("whit:sparta", showSparta);
 const overlay = document.createElement("div");
 overlay.className = "whit-toasty";
 overlay.setAttribute("aria-hidden", "true");
 overlay.innerHTML = `<div class="whit-toasty-figure"><span class="whit-toasty-placeholder">😎</span></div><span class="whit-toasty-caption">TOASTY!</span>`;
-document.body.append(coach, overlay);
+document.body.append(coach, overlay, sparta);
 document.getElementById("whit-coach-hint").addEventListener("click", () => {
   const tip = document.getElementById("whit-coach-tip");
   tip.textContent = tips[Math.floor(Math.random() * tips.length)];
@@ -30,12 +43,14 @@ function showToasty() {
   toastyTimer = setTimeout(() => overlay.classList.remove("whit-toasty-active"), 1450);
 }
 document.getElementById("whit-coach-toasty").addEventListener("click", showToasty);
+// Test animation manually from the browser console: document.dispatchEvent(new Event("whit:sparta"))
 // Future integration: dispatch 'whit:toasty' only after exceptional achievements.
 document.addEventListener("whit:toasty", showToasty);
 
 // User-selected pop-culture quotes, shown as text only (no licensed audio or artwork).
 const whitReactions = Object.freeze({
-  checkmate: [{line:"Great Scott!",symbol:"⚡"},{line:"You shall not pass!!",symbol:"🧙"},{line:"This is Sparta.",symbol:"🛡️"}],
+  sparta: [{line:"THIS IS SPARTA!",symbol:"🛡️",effect:"sparta"}],
+  checkmate: [{line:"Great Scott!",symbol:"⚡"},{line:"You shall not pass!!",symbol:"🧙"},{line:"THIS IS SPARTA!",symbol:"🛡️",effect:"sparta"}],
   capture: [{line:"My precious.",symbol:"💍"},{line:"Stick around.",symbol:"🎯"},{line:"Hadouken!",symbol:"💥"}],
   captureStreak: [{line:"He's on fire!",symbol:"🔥"}],
   blunder: [{line:"You're gonna need a bigger boat.",symbol:"🦈",effect:"shark"},{line:"Hold onto your butts.",symbol:"🦖"},{line:"The cake is a lie.",symbol:"🎂"}],
@@ -56,6 +71,7 @@ function showWhitReaction(type, force = false) {
   coach.classList.remove("whit-coach-celebrate");
   void coach.offsetWidth;
   coach.classList.add("whit-coach-celebrate");
+  if (pick.effect === "sparta") showSparta();
   if (pick.effect === "shark") {
     overlay.querySelector(".whit-toasty-placeholder").textContent = "😱";
     overlay.querySelector(".whit-toasty-caption").textContent = "🦈";
