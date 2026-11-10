@@ -167,3 +167,21 @@ html[data-theme="dark"] { --ink:#f5f1ff; --muted:#beb7d0; --paper:#242038; --cre
 @keyframes whit-shark-swoop{0%,30%{transform:translateX(0) rotate(0)}70%,100%{transform:translateX(-110vw) rotate(-20deg)}}
 @keyframes whit-shark-bite{0%,30%{transform:translateX(30vw) rotate(-15deg)}50%{transform:translateX(0) rotate(0)}100%{transform:translateX(-110vw) rotate(-20deg)}}
 @media(prefers-reduced-motion:reduce){.whit-shark .whit-toasty-figure,.whit-shark .whit-toasty-caption{animation:none}}
+
+/* Sparta homage: original chess scene, placeholder Coach Whit figure only. */
+.whit-sparta{position:fixed;inset:0;z-index:110;pointer-events:none;opacity:0;visibility:hidden;background:#100e20b8;display:grid;place-items:center}
+.whit-sparta-active{visibility:visible;animation:whit-sparta-show 2.3s both}
+.whit-sparta-stage{position:relative;width:min(580px,96vw);height:min(420px,72vh);overflow:hidden;border-radius:18px;background:radial-gradient(ellipse at 50% 15%,#705b55,#211c2d 70%);border:5px solid #a38762}
+.whit-sparta-hole{position:absolute;bottom:7%;left:39%;width:42%;height:19%;border-radius:50%;background:radial-gradient(ellipse,#000 40%,#24140e 70%,#9d7549 85%);transform:rotate(-8deg)}
+.whit-sparta-coach{position:absolute;left:16%;bottom:22%;font-size:clamp(5rem,18vw,9rem);z-index:3;transform-origin:bottom center}
+.whit-sparta-coach-body{display:block}
+.whit-sparta-piece{position:absolute;left:51%;bottom:35%;font-size:clamp(4rem,13vw,7rem);z-index:4;color:#f7c86b;text-shadow:2px 5px 5px #000}
+.whit-sparta-quote{position:absolute;top:9%;left:0;width:100%;text-align:center;font-size:clamp(1.3rem,5vw,2.8rem);color:#ffe1a0;text-shadow:2px 4px #251719;letter-spacing:.08em;z-index:5}
+.whit-sparta-active .whit-sparta-coach{animation:whit-sparta-kick 2.3s ease-in-out both}
+.whit-sparta-active .whit-sparta-piece{animation:whit-sparta-fall 2.3s ease-in both}
+.whit-sparta-active .whit-sparta-quote{animation:whit-sparta-text 2.3s both}
+@keyframes whit-sparta-show{0%,100%{opacity:0}12%,83%{opacity:1}}
+@keyframes whit-sparta-kick{0%,22%,75%,100%{transform:rotate(0)}36%{transform:rotate(-18deg)}49%{transform:rotate(12deg)}}
+@keyframes whit-sparta-fall{0%,39%{transform:translate(0,0) rotate(0);opacity:1}65%{transform:translate(80px,105px) rotate(65deg) scale(.7);opacity:1}85%,100%{transform:translate(100px,210px) rotate(135deg) scale(.2);opacity:0}}
+@keyframes whit-sparta-text{0%,20%,85%,100%{opacity:0;transform:scale(.85)}32%,75%{opacity:1;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.whit-sparta-active,.whit-sparta-active .whit-sparta-coach,.whit-sparta-active .whit-sparta-piece,.whit-sparta-active .whit-sparta-quote{animation:none}.whit-sparta-active{opacity:1}}
