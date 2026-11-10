@@ -19,6 +19,7 @@ document.body.append(coach, overlay);
 document.getElementById("whit-coach-hint").addEventListener("click", () => {
   const tip = document.getElementById("whit-coach-tip");
   tip.textContent = tips[Math.floor(Math.random() * tips.length)];
+  if (Math.random() < .35) showWhitReaction("hint", true);
 });
 let toastyTimer;
 function showToasty() {
@@ -32,26 +33,40 @@ document.getElementById("whit-coach-toasty").addEventListener("click", showToast
 // Future integration: dispatch 'whit:toasty' only after exceptional achievements.
 document.addEventListener("whit:toasty", showToasty);
 
-// Original pop-culture-inspired reaction lines; no third-party audio or artwork.
+// User-selected pop-culture quotes, shown as text only (no licensed audio or artwork).
 const whitReactions = Object.freeze({
-  checkmate: [{line:"Game over, chess champion!",symbol:"🏆"},{line:"That's how the cookie crumbles!",symbol:"🍪"}],
-  brilliant: [{line:"Maximum brain power!",symbol:"⚡"},{line:"Legendary move unlocked!",symbol:"🌟"}],
-  blunder: [{line:"Plot twist! We can recover.",symbol:"😬"},{line:"Well, that escalated quickly.",symbol:"🎬"}],
-  promotion: [{line:"Behold the royal upgrade!",symbol:"👑"}],
-  fork: [{line:"Double trouble!",symbol:"🍴"}],
-  streak: [{line:"Combo streak! Keep it rolling!",symbol:"🔥"}],
-  puzzle: [{line:"Achievement unlocked: big brain!",symbol:"🧠"}]
+  checkmate: [{line:"Great Scott!",symbol:"⚡"},{line:"You shall not pass!!",symbol:"🧙"},{line:"This is Sparta.",symbol:"🛡️"}],
+  capture: [{line:"My precious.",symbol:"💍"},{line:"Stick around.",symbol:"🎯"},{line:"Hadouken!",symbol:"💥"}],
+  captureStreak: [{line:"He's on fire!",symbol:"🔥"}],
+  blunder: [{line:"You're gonna need a bigger boat.",symbol:"🦈",effect:"shark"},{line:"Hold onto your butts.",symbol:"🦖"},{line:"The cake is a lie.",symbol:"🎂"}],
+  promotion: [{line:"Look at me. I'm the Captain now.",symbol:"👑"},{line:"Great Scott!",symbol:"⚡"}],
+  puzzle: [{line:"Wax on, wax off.",symbol:"🥋"},{line:"It's dangerous to go alone, take this.",symbol:"🗡️"},{line:"Hey! Look! Listen!",symbol:"✨"}],
+  hint: [{line:"Do or do not, there is no try.",symbol:"🌌"},{line:"Hey! Look! Listen!",symbol:"✨"}],
+  defeat: [{line:"I'll be back.",symbol:"🤖"},{line:"Press F to pay respects.",symbol:"🎮"}],
+  brilliant: [{line:"Great Scott!",symbol:"⚡"},{line:"Exchange",symbol:"🌑"}]
 });
 let lastReactionAt = 0;
-document.addEventListener("whit:reaction", event => {
-  const type = event.detail?.type;
-  const options = Object.prototype.hasOwnProperty.call(whitReactions,type) ? whitReactions[type] : null;
-  if (!options || Date.now()-lastReactionAt < 8000) return;
+let reactionTimer;
+function showWhitReaction(type, force = false) {
+  const options = whitReactions[type];
+  if (!options || (!force && Date.now() - lastReactionAt < 8000)) return;
   lastReactionAt = Date.now();
-  const pick = options[Math.floor(Math.random()*options.length)];
-  document.getElementById("whit-coach-tip").textContent = pick.symbol+" "+pick.line;
+  const pick = options[Math.floor(Math.random() * options.length)];
+  document.getElementById("whit-coach-tip").textContent = pick.symbol + " " + pick.line;
   coach.classList.remove("whit-coach-celebrate");
   void coach.offsetWidth;
   coach.classList.add("whit-coach-celebrate");
-  if (type === "checkmate" && Math.random() < .25) showToasty();
-});
+  if (pick.effect === "shark") {
+    overlay.querySelector(".whit-toasty-placeholder").textContent = "😱";
+    overlay.querySelector(".whit-toasty-caption").textContent = "🦈";
+    overlay.classList.add("whit-shark");
+    showToasty();
+    clearTimeout(reactionTimer);
+    reactionTimer = setTimeout(() => {
+      overlay.classList.remove("whit-shark");
+      overlay.querySelector(".whit-toasty-placeholder").textContent = "😎";
+      overlay.querySelector(".whit-toasty-caption").textContent = "TOASTY!";
+    }, 1500);
+  } else if (type === "checkmate" && Math.random() < .25) showToasty();
+}
+document.addEventListener("whit:reaction", event => showWhitReaction(event.detail?.type));
