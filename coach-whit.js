@@ -31,3 +31,27 @@ function showToasty() {
 document.getElementById("whit-coach-toasty").addEventListener("click", showToasty);
 // Future integration: dispatch 'whit:toasty' only after exceptional achievements.
 document.addEventListener("whit:toasty", showToasty);
+
+// Original pop-culture-inspired reaction lines; no third-party audio or artwork.
+const whitReactions = Object.freeze({
+  checkmate: [{line:"Game over, chess champion!",symbol:"🏆"},{line:"That's how the cookie crumbles!",symbol:"🍪"}],
+  brilliant: [{line:"Maximum brain power!",symbol:"⚡"},{line:"Legendary move unlocked!",symbol:"🌟"}],
+  blunder: [{line:"Plot twist! We can recover.",symbol:"😬"},{line:"Well, that escalated quickly.",symbol:"🎬"}],
+  promotion: [{line:"Behold the royal upgrade!",symbol:"👑"}],
+  fork: [{line:"Double trouble!",symbol:"🍴"}],
+  streak: [{line:"Combo streak! Keep it rolling!",symbol:"🔥"}],
+  puzzle: [{line:"Achievement unlocked: big brain!",symbol:"🧠"}]
+});
+let lastReactionAt = 0;
+document.addEventListener("whit:reaction", event => {
+  const type = event.detail?.type;
+  const options = Object.prototype.hasOwnProperty.call(whitReactions,type) ? whitReactions[type] : null;
+  if (!options || Date.now()-lastReactionAt < 8000) return;
+  lastReactionAt = Date.now();
+  const pick = options[Math.floor(Math.random()*options.length)];
+  document.getElementById("whit-coach-tip").textContent = pick.symbol+" "+pick.line;
+  coach.classList.remove("whit-coach-celebrate");
+  void coach.offsetWidth;
+  coach.classList.add("whit-coach-celebrate");
+  if (type === "checkmate" && Math.random() < .25) showToasty();
+});
