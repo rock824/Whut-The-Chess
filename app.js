@@ -533,11 +533,15 @@ function playClick(index) {
   } else { playSelected = null; playLegal = []; renderPlay(); }
 }
 
+let whitCaptureStreak = 0;
+function whitReact(type) { document.dispatchEvent(new CustomEvent("whit:reaction", {detail:{type}})); }
 function makePlayerMove(move) {
   const before = playGame.board[move.to];
   const moved = playGame.move(move.from, move.to);
   if (!moved) return;
-  sound(before || moved.enPassant ? "capture" : "move");
+  const captured = Boolean(before || moved.enPassant);
+  if (captured) { whitCaptureStreak += 1; whitReact(whitCaptureStreak >= 3 ? "captureStreak" : "capture"); }
+  sound(captured ? "capture" : "move");
   moveStory.push({ side: "You", text: prettyMove(moved) });
   gameXP += 1; if (gameXP <= 20) awardXP(1, "Legal move");
   trackMission(moved); playSelected = null; playLegal = []; playHint = [];
@@ -562,6 +566,7 @@ function botMove() {
   else move = bestMove(playGame, 3);
   if (move) {
     playGame.move(move.from, move.to); moveStory.push({ side: "Nova", text: prettyMove(move) });
+    if (move.captured) whitCaptureStreak = 0;
     sound(move.captured ? "capture" : "move");
   }
   botThinking = false;
@@ -621,8 +626,8 @@ function renderMoveLog() {
 }
 
 function finishGame(status) {
-  if (status.type === "checkmate" && status.winner === "w") { setCoach("🏆", "Checkmate!", "You won by trapping the king. That's worth a big victory bonus!"); awardXP(50, "Game won"); celebrate(); sound("success"); }
-  else if (status.type === "checkmate") setCoach("🤝", "Good game", "Coach Nova found checkmate. Review the last few moves, then try again—you get stronger every game.");
+  if (status.type === "checkmate" && status.winner === "w") { whitReact("checkmate"); setCoach("🏆", "Checkmate!", "You won by trapping the king. That's worth a big victory bonus!"); awardXP(50, "Game won"); celebrate(); sound("success"); }
+  else if (status.type === "checkmate") { whitReact("defeat"); setCoach("🤝", "Good game", "Coach Nova found checkmate. Review the last few moves, then try again—you get stronger every game."); }
   else setCoach("🤝", "Draw", "Neither side can force a win from this position. A draw can be a smart result!");
 }
 
