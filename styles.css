@@ -148,3 +148,15 @@ html[data-theme="dark"] { --ink:#f5f1ff; --muted:#beb7d0; --paper:#242038; --cre
 }
 
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration: .01ms !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+
+/* Coach Whit: placeholder-only UI; personal likeness assets remain outside GitHub. */
+.whit-coach{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;gap:12px;align-items:center;width:min(340px,calc(100vw - 32px));padding:13px;border:2px solid #6b54bb;border-radius:18px;background:#fff;color:#241c43;box-shadow:0 10px 30px #17152c30}
+.whit-coach-avatar{font-size:2.2rem;background:#eee9ff;border-radius:14px;padding:8px}
+.whit-coach-copy{min-width:0}.whit-coach-copy strong{font-size:.95rem}.whit-coach-copy p{font-size:.82rem;line-height:1.4;margin:4px 0 8px}
+.whit-coach-actions{display:flex;gap:8px;flex-wrap:wrap}.whit-coach-actions button{border:0;border-radius:9px;padding:7px 10px;background:#6650b5;color:white;font-weight:700;cursor:pointer}
+.whit-toasty{position:fixed;right:0;bottom:8%;z-index:100;pointer-events:none;transform:translateX(120%);opacity:0;display:flex;align-items:end;gap:5px}
+.whit-toasty-figure{font-size:clamp(5rem,15vw,9rem);line-height:1}.whit-toasty-caption{font-size:clamp(1rem,4vw,2rem);font-weight:1000;color:#ffc947;text-shadow:2px 3px #17152c}
+.whit-toasty-active{animation:whit-pop 1.45s ease-in-out both}
+@keyframes whit-pop{0%{transform:translateX(120%);opacity:0}18%,75%{transform:translateX(0);opacity:1}100%{transform:translateX(120%);opacity:0}}
+@media(max-width:650px){.whit-coach{position:relative;right:auto;bottom:auto;margin:12px auto;width:calc(100% - 24px)}}
+@media(prefers-reduced-motion:reduce){.whit-toasty-active{animation:none;transform:translateX(0);opacity:1}}
