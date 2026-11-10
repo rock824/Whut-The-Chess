@@ -160,3 +160,10 @@ html[data-theme="dark"] { --ink:#f5f1ff; --muted:#beb7d0; --paper:#242038; --cre
 @keyframes whit-pop{0%{transform:translateX(120%);opacity:0}18%,75%{transform:translateX(0);opacity:1}100%{transform:translateX(120%);opacity:0}}
 @media(max-width:650px){.whit-coach{position:relative;right:auto;bottom:auto;margin:12px auto;width:calc(100% - 24px)}}
 @media(prefers-reduced-motion:reduce){.whit-toasty-active{animation:none;transform:translateX(0);opacity:1}}
+
+/* Arcade shark gag: placeholder art until private Coach Whit asset service is ready. */
+.whit-shark .whit-toasty-figure{animation:whit-shark-swoop 1.45s ease-in both}
+.whit-shark .whit-toasty-caption{font-size:clamp(3rem,10vw,6rem);animation:whit-shark-bite 1.45s ease-in both}
+@keyframes whit-shark-swoop{0%,30%{transform:translateX(0) rotate(0)}70%,100%{transform:translateX(-110vw) rotate(-20deg)}}
+@keyframes whit-shark-bite{0%,30%{transform:translateX(30vw) rotate(-15deg)}50%{transform:translateX(0) rotate(0)}100%{transform:translateX(-110vw) rotate(-20deg)}}
+@media(prefers-reduced-motion:reduce){.whit-shark .whit-toasty-figure,.whit-shark .whit-toasty-caption{animation:none}}
